@@ -1,58 +1,62 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.pipeline import Pipeline
 import joblib
 
 # Load the dataset
 df = pd.read_csv('phishing_site_urls.csv')
 
-# Separate features (X) and labels (y)
+# Separate features (URLs) and labels
 X = df['URL']
 y = df['Label']
 
-# Convert labels to numerical format (0 for 'good', 1 for 'bad')
+# Convert labels to numerical format
 label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
+
+# Create a pipeline that includes vectorization, scaling, and logistic regression with increased regularization
+pipeline = Pipeline([
+    ('vectorizer', CountVectorizer(max_features=5000, min_df=5, max_df=0.7)),
+    ('scaler', StandardScaler(with_mean=False)),
+    ('logistic', LogisticRegression(C=0.1, max_iter=1000, random_state=42))
+])
 
 # Split the dataset into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# For simplicity, we'll use CountVectorizer to convert URLs into numerical features
-vectorizer = CountVectorizer()
-X_train_vec = vectorizer.fit_transform(X_train)
-X_test_vec = vectorizer.transform(X_test)
+# Fit the pipeline on the training set
+pipeline.fit(X_train, y_train)
 
-# Standardize features using StandardScaler with with_mean=False for sparse matrices
-scaler = StandardScaler(with_mean=False)
-X_train_scaled = scaler.fit_transform(X_train_vec)
-X_test_scaled = scaler.transform(X_test_vec)
+# Predictions and evaluations on the test set
+y_pred_test = pipeline.predict(X_test)
+accuracy_test = accuracy_score(y_test, y_pred_test)
+conf_matrix_test = confusion_matrix(y_test, y_pred_test)
+classification_rep_test = classification_report(y_test, y_pred_test)
 
-# Logistic Regression model
-logistic_model = LogisticRegression(max_iter=1000, random_state=42)
-logistic_model.fit(X_train_scaled, y_train)
-y_pred_logistic = logistic_model.predict(X_test_scaled)
+# Perform 5-fold cross-validation and print the mean accuracy
+cross_val_accuracy = cross_val_score(pipeline, X, y, cv=5).mean()
+print(f'Cross-Validation Accuracy: {cross_val_accuracy}')
 
-# Evaluate the Logistic Regression model
-accuracy_logistic = accuracy_score(y_test, y_pred_logistic)
-conf_matrix_logistic = confusion_matrix(y_test, y_pred_logistic)
-classification_rep_logistic = classification_report(y_test, y_pred_logistic)
+# Predictions and evaluations on the training set for comparison
+y_pred_train = pipeline.predict(X_train)
+accuracy_train = accuracy_score(y_train, y_pred_train)
 
+# Print training and testing accuracy
+print(f'Training Accuracy: {accuracy_train}')
+print(f'Testing Accuracy: {accuracy_test}')
 
-
-# Save the model
-joblib.dump(logistic_model, 'logistic_model.pkl')
-joblib.dump(label_encoder, 'label_encoder.pkl')
-joblib.dump(vectorizer, 'vectorizer.pkl')
-joblib.dump(scaler, 'scaler.pkl')
-
-print('Logistic Regression Model:')
-print(f'Accuracy: {accuracy_logistic}')
+# Print testing performance metrics
+print('Logistic Regression Model Testing Performance:')
+print(f'Accuracy: {accuracy_test}')
 print('Confusion Matrix:')
-print(conf_matrix_logistic)
+print(conf_matrix_test)
 print('Classification Report:')
-print(classification_rep_logistic)
+print(classification_rep_test)
 
-
+# Save the pipeline and label encoder
+joblib.dump(pipeline, 'phishing_detection_pipeline.pkl')
+joblib.dump(label_encoder, 'label_encoder.pkl')
