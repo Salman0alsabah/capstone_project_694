@@ -19,7 +19,16 @@ The AI-Powered Fraud Detection system is designed to offer a robust solution aga
 ### Installing
 
 - python3
-  
+- mysql
+- get ur own urlscan.io API
 
 
+### Executing program
+
+- download the file.
+- change the code with the correct path where the files are.
+- change the API with ur own
+- run the python3 interface.py
+- make ur account.
+- use the APP!!!
 
