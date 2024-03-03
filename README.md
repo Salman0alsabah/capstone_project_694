@@ -16,5 +16,10 @@ The AI-Powered Fraud Detection system is designed to offer a robust solution aga
 
 -	 User-Friendly Interface: Features an intuitive and visually engaging dashboard for real-time links monitoring, designed to ensure accessibility and ease of use across various devices
 
+### Installing
+
+- python3
+  
+
 
 
