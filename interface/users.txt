@@ -1,0 +1,3 @@
+salman@example.com:password123
+user2@example.com:securepass
+sal@g.com:salmlm
