@@ -74,7 +74,7 @@ def check_and_scan_url(url, api_key, ui_update_callback):
             store_bad_link(url, scan_result)
             ui_update_callback(f"The URL {url} has been marked as bad after URLScan.io analysis.")
         else:
-            ui_update_callback(f"The URL {url} is considered safe after URLScan.io analysis.")
+            ui_update_callback(f"The URL {url} is considered safe after URLScan.io analysis and AI model.")
     else:
         # If the AI model predicts the URL as unsafe, mark it as bad immediately
         store_bad_link(url, prediction_label)

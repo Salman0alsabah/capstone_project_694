@@ -5,10 +5,13 @@ from database import fetch_sorted_links
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QWidget, QMessageBox, QHBoxLayout, QTableWidget,
-    QTableWidgetItem,QHeaderView,QSizePolicy,QScrollArea
+    QTableWidgetItem,QHeaderView,QSizePolicy,QScrollArea,
+    QTextEdit,QGroupBox
 )
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QIcon
+from chatbot import ChatBot
+
 
 
 # Function to read user data from a file
@@ -63,6 +66,7 @@ class FraudDetectionApp(QMainWindow):
         self.user_data = read_user_data_from_file()
         self.current_user = None
         self.api_key = 'ca44cc05-a78a-4a0a-ab83-71d46e971518'
+        self.chat_bot = ChatBot()
 
         # Set a fixed size for the QMainWindow
         self.setFixedSize(800, 600)  # Adjust the size as needed
@@ -71,6 +75,7 @@ class FraudDetectionApp(QMainWindow):
         # Initialize UI components
         self.initUI()
 
+    
     def initUI(self):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -99,13 +104,13 @@ class FraudDetectionApp(QMainWindow):
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
-            color: #007bff;
+            color: white;
         """)
         self.main_layout.addWidget(self.welcome_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.get_started_button = QPushButton("Get Started")
         self.get_started_button.setStyleSheet("""
-            background-color: #007bff;
+            background-color: #5e5e5e;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -126,7 +131,7 @@ class FraudDetectionApp(QMainWindow):
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #007bff;
+            color: white;
         """)
         self.main_layout.addWidget(self.login_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -143,7 +148,7 @@ class FraudDetectionApp(QMainWindow):
 
         self.login_button = QPushButton("Login")
         self.login_button.setStyleSheet("""
-            background-color: #007bff;
+            background-color: #5e5e5e;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -153,8 +158,7 @@ class FraudDetectionApp(QMainWindow):
         self.login_button.clicked.connect(self.login)
         self.main_layout.addWidget(self.login_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self.signup_link = QLabel("Don't have an account? <a href='#'>Sign up</a>")
-        self.signup_link.setStyleSheet("color: #007bff;")
+        self.signup_link = QLabel("Don't have an account? <a href='#' style='color: white;'>Sign up</a>")
         self.signup_link.setOpenExternalLinks(False)
         self.signup_link.linkActivated.connect(self.show_signup_page)
         self.main_layout.addWidget(self.signup_link, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -170,7 +174,7 @@ class FraudDetectionApp(QMainWindow):
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #007bff;
+            color: white;
         """)
         self.main_layout.addWidget(self.signup_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -187,7 +191,7 @@ class FraudDetectionApp(QMainWindow):
 
         self.signup_button = QPushButton("Sign Up")
         self.signup_button.setStyleSheet("""
-            background-color: #007bff;
+            background-color: #5e5e5e;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -197,8 +201,7 @@ class FraudDetectionApp(QMainWindow):
         self.signup_button.clicked.connect(self.signup)
         self.main_layout.addWidget(self.signup_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self.login_link = QLabel("Already have an account? <a href='#'>Login</a>")
-        self.login_link.setStyleSheet("color: #007bff;")
+        self.login_link = QLabel("Already have an account? <a href='#' style='color: white;'>Login </a>")
         self.login_link.setOpenExternalLinks(False)
         self.login_link.linkActivated.connect(self.show_login_page)
         self.main_layout.addWidget(self.login_link, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -233,6 +236,13 @@ class FraudDetectionApp(QMainWindow):
         self.database_icon.clicked.connect(self.show_database_info)
         self.sidebar_layout.addWidget(self.database_icon)
 
+        # chatbot Icon in the Sidebar
+        self.chatbot_icon = QPushButton()
+        self.chatbot_icon.setIcon(QIcon('cil-chat-bubble.png'))  # Update with the path to your database icon
+        self.chatbot_icon.setIconSize(QSize(40, 40))  # Set icon size
+        self.chatbot_icon.setStyleSheet("background-color: transparent; border: none;")
+        self.chatbot_icon.clicked.connect(self.show_chat_window)
+        self.sidebar_layout.addWidget(self.chatbot_icon)
 
         # Add stretch to push subsequent widgets to the bottom
         self.sidebar_layout.addStretch()
@@ -271,6 +281,57 @@ class FraudDetectionApp(QMainWindow):
         self.main_layout.addLayout(self.dashboard_layout)
 
     
+    def show_chat_window(self):
+        # Clear the main content layout first
+        self.clear_main_content_layout()
+
+        # Create a layout to hold the chat messages
+        self.chat_layout = QVBoxLayout()
+
+        # Create a group box to contain the chat messages
+        chat_group_box = QGroupBox("Chat Messages")
+        chat_group_box.setLayout(self.chat_layout)
+
+        # Create a QTextEdit widget to display chat messages
+        self.chat_display = QTextEdit()
+        self.chat_display.setReadOnly(True)
+
+        # Add the chat display to the layout
+        self.chat_layout.addWidget(self.chat_display)
+
+        # Create a QLineEdit widget for entering chat messages
+        self.chat_input = QLineEdit()
+        self.chat_input.returnPressed.connect(self.send_message)
+
+        # Add the chat input field to the layout
+        self.chat_layout.addWidget(self.chat_input)
+
+        # Add the group box to the main content layout
+        self.main_content_layout.addWidget(chat_group_box)
+
+    def send_message(self):
+        # Get the message from the input field
+        message = self.chat_input.text()
+
+        # Clear the input field
+        self.chat_input.clear()
+
+        # Add the user message to the chat display
+        self.display_message(self.chat_display, f"You: {message} \n ")
+
+        # Call AI chat method to generate response using the chat_bot instance
+        self.chat_bot.ai_chat(message)
+
+        # Get the response from the chatbot
+        response = self.chat_bot.get_last_response()
+
+        # Add the chatbot response to the chat display
+        self.display_message(self.chat_display, f"ChatGPT: {response} \n")
+
+    def display_message(self, chat_display, message):
+        # Append the message to the chat display
+        chat_display.append(message)
+
 
     def show_database_info(self):
         # Clear the main content layout first
