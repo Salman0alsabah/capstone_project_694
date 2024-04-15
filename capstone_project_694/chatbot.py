@@ -5,7 +5,7 @@ class ChatBot:
     def __init__(self):
         self.previous_input = ""
         self.last_response = ""
-        self.client = OpenAI(api_key="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")
+        self.client = OpenAI(api_key="")
 
     def ai_chat(self, chat_input):
         if chat_input != self.previous_input:
