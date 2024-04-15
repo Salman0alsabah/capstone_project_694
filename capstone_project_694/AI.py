@@ -55,14 +55,13 @@ def submit_to_urlscan_and_fetch_result(url, api_key):
                 return "bad"
     return "good"
 
-# Main function to orchestrate the URL checking and scanning process
 def check_and_scan_url(url, api_key, ui_update_callback):
     logistic_model, label_encoder, vectorizer, scaler = load_components()
 
     # Check if the URL is already in the database
     db_status = check_url_in_database(url)
     if db_status == "bad":
-        ui_update_callback(f"The URL {url} is already marked as bad in the database.")
+        ui_update_callback(f"The URL {url} is already marked as bad in the database.", False)
         return
 
     # Use AI model to predict URL safety
@@ -72,11 +71,10 @@ def check_and_scan_url(url, api_key, ui_update_callback):
         scan_result = submit_to_urlscan_and_fetch_result(url, api_key)
         if scan_result == "bad":
             store_bad_link(url, scan_result)
-            ui_update_callback(f"The URL {url} has been marked as bad after URLScan.io analysis.")
+            ui_update_callback(f"The URL {url} has been marked as bad after URLScan.io analysis.", False)
         else:
-            ui_update_callback(f"The URL {url} is considered safe after URLScan.io analysis and AI model.")
+            ui_update_callback(f"The URL {url} is considered safe after URLScan.io analysis and AI model.", True)
     else:
         # If the AI model predicts the URL as unsafe, mark it as bad immediately
         store_bad_link(url, prediction_label)
-        ui_update_callback(f"The URL {url} is considered potentially unsafe by the AI model and has been marked as bad.")
-
+        ui_update_callback(f"The URL {url} is considered potentially unsafe by the AI model and has been marked as bad.", False)

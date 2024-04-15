@@ -9,23 +9,10 @@ from PyQt6.QtWidgets import (
     QTextEdit,QGroupBox
 )
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon,QPixmap
 from chatbot import ChatBot
-
-
-
-# Function to read user data from a file
-def read_user_data_from_file():
-    user_data = {}
-    try:
-        with open('users.txt', 'r') as file:
-            for line in file:
-                email, password = line.strip().split(':')
-                user_data[email] = password
-    except FileNotFoundError:
-        pass  # It's okay if the file doesn't exist yet
-    return user_data
-
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 
 class FraudDetectionApp(QMainWindow):
@@ -63,7 +50,6 @@ class FraudDetectionApp(QMainWindow):
             }
         """)
 
-        self.user_data = read_user_data_from_file()
         self.current_user = None
         self.api_key = 'ca44cc05-a78a-4a0a-ab83-71d46e971518'
         self.chat_bot = ChatBot()
@@ -86,6 +72,8 @@ class FraudDetectionApp(QMainWindow):
 
         # Welcome Page
         self.setup_welcome_page()
+        
+
 
     def read_user_data_from_file(self):
         user_data = {}
@@ -108,103 +96,45 @@ class FraudDetectionApp(QMainWindow):
         """)
         self.main_layout.addWidget(self.welcome_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self.get_started_button = QPushButton("Get Started")
-        self.get_started_button.setStyleSheet("""
-            background-color: #5e5e5e;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 5px;
-        """)
-        self.get_started_button.clicked.connect(self.show_login_page)
-        self.main_layout.addWidget(self.get_started_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.google_login_button = QPushButton("Login/Signup with Google")
+        self.google_login_button.setFixedSize(200, 50) 
+        self.google_login_button.clicked.connect(self.google_login)
+        self.main_layout.addWidget(self.google_login_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-    def show_login_page(self):
-        # Clear the layout and setup the login UI
-        self.clear_layout()
-        self.setup_login_page()
+   
 
-    def setup_login_page(self):
-        self.login_label = QLabel("Login")
-        self.login_label.setStyleSheet("""
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: white;
-        """)
-        self.main_layout.addWidget(self.login_label, alignment=Qt.AlignmentFlag.AlignCenter)
+    def google_login(self):
+        try:
+            # Specify the scopes required
+            scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile']
 
-        self.email_label = QLabel("Email:")
-        self.email_entry = QLineEdit()
-        self.main_layout.addWidget(self.email_label)
-        self.main_layout.addWidget(self.email_entry)
+            # Use the credentials file that you have downloaded from the Google Developer Console
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'client_secret_104974700020-6tjg06rt7t7obu0gcu0gppdllnq3jo8k.apps.googleusercontent.com.json', scopes=scopes)
 
-        self.password_label = QLabel("Password:")
-        self.password_entry = QLineEdit()
-        self.password_entry.setEchoMode(QLineEdit.EchoMode.Password)
-        self.main_layout.addWidget(self.password_label)
-        self.main_layout.addWidget(self.password_entry)
+            # Run the local server to complete the authentication flow
+            flow.run_local_server(port=8080)
 
-        self.login_button = QPushButton("Login")
-        self.login_button.setStyleSheet("""
-            background-color: #5e5e5e;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 5px;
-        """)
-        self.login_button.clicked.connect(self.login)
-        self.main_layout.addWidget(self.login_button, alignment=Qt.AlignmentFlag.AlignCenter)
+            # Get the Google API service
+            credentials = flow.credentials
+            service = build('oauth2', 'v2', credentials=credentials)
+            user_info = service.userinfo().get().execute()
 
-        self.signup_link = QLabel("Don't have an account? <a href='#' style='color: white;'>Sign up</a>")
-        self.signup_link.setOpenExternalLinks(False)
-        self.signup_link.linkActivated.connect(self.show_signup_page)
-        self.main_layout.addWidget(self.signup_link, alignment=Qt.AlignmentFlag.AlignCenter)
+            if user_info and user_info.get('email'):
+                self.handle_user_login(user_info['email'], user_info)
+            else:
+                QMessageBox.warning(self, "Login Failed", "Could not complete Google login.")
+        except Exception as e:
+            QMessageBox.warning(self, "Login Error", f"An error occurred: {e}")
 
-    def show_signup_page(self):
-        # Clear the layout and setup the signup UI
-        self.clear_layout()
-        self.setup_signup_page()
+    def handle_user_login(self, email, user_info):
+        # Logic to handle user session after login
+        self.current_user = email
+        QMessageBox.information(self, "Login Successful", f"You are logged in as {email}")
+        self.show_dashboard()  # Show the main dashboard or any other relevant screen
 
-    def setup_signup_page(self):
-        self.signup_label = QLabel("Sign Up")
-        self.signup_label.setStyleSheet("""
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: white;
-        """)
-        self.main_layout.addWidget(self.signup_label, alignment=Qt.AlignmentFlag.AlignCenter)
+    
 
-        self.new_email_label = QLabel("Email:")
-        self.new_email_entry = QLineEdit()
-        self.main_layout.addWidget(self.new_email_label)
-        self.main_layout.addWidget(self.new_email_entry)
-
-        self.new_password_label = QLabel("Password:")
-        self.new_password_entry = QLineEdit()
-        self.new_password_entry.setEchoMode(QLineEdit.EchoMode.Password)
-        self.main_layout.addWidget(self.new_password_label)
-        self.main_layout.addWidget(self.new_password_entry)
-
-        self.signup_button = QPushButton("Sign Up")
-        self.signup_button.setStyleSheet("""
-            background-color: #5e5e5e;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 5px;
-        """)
-        self.signup_button.clicked.connect(self.signup)
-        self.main_layout.addWidget(self.signup_button, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        self.login_link = QLabel("Already have an account? <a href='#' style='color: white;'>Login </a>")
-        self.login_link.setOpenExternalLinks(False)
-        self.login_link.linkActivated.connect(self.show_login_page)
-        self.main_layout.addWidget(self.login_link, alignment=Qt.AlignmentFlag.AlignCenter)
 
     def show_dashboard(self):
         # Clear the main layout first
@@ -269,7 +199,7 @@ class FraudDetectionApp(QMainWindow):
         self.main_content_layout.addLayout(self.top_bar)
 
         # Placeholder for extra content in the main content area
-        self.extra_content_placeholder = QLabel("Extra Content Here")
+        self.extra_content_placeholder = QLabel("")
         self.extra_content_placeholder.setStyleSheet("color: #FFF; font-size: 16px;")
         self.main_content_layout.addWidget(self.extra_content_placeholder)
 
@@ -436,15 +366,29 @@ class FraudDetectionApp(QMainWindow):
 
     def check_url(self):
         # Define a callback function to update the UI with the result of the URL check
-        def ui_update_callback(result):
+        def ui_update_callback(result, is_bad_url):
             # Clear the main content layout first
             self.clear_main_content_layout()
 
-            # Display the result in the main content area
+            if is_bad_url == False:
+                # Display the picture for bad URL
+                bad_url_image = QLabel()
+                pixmap = QPixmap('icons8-x-100-2.png')  
+                bad_url_image.setPixmap(pixmap)
+                bad_url_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.main_content_layout.addWidget(bad_url_image)
+            else:
+                # Display the picture for good URL
+                good_url_image = QLabel()
+                pixmap = QPixmap('icons8-check-100.png')  
+                good_url_image.setPixmap(pixmap)
+                good_url_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.main_content_layout.addWidget(good_url_image)
+                
+            # Display the message
             result_label = QLabel(result)
             result_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            result_label.setWordWrap(True)  # Enable word wrapping to ensure the entire text is visible
-            result_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # Make label expandable
+            result_label.setWordWrap(True)
             self.main_content_layout.addWidget(result_label)
 
         # Try to get URL from clipboard
