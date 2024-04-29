@@ -29,6 +29,5 @@ The AI-Powered Fraud Detection system is designed to offer a robust solution aga
 - change the code with the correct path where the files are.
 - change the API with ur own
 - run the python3 interface.py
-- make ur account.
 - use the APP!!!
 
